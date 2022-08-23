@@ -1,0 +1,66 @@
+#! /usr/bin/env python3
+
+from math import log, sqrt, exp
+from scipy.stats import norm
+
+def d1(stock, strike, period, rf, sigma):
+    return (log(stock / strike) + (rf + sigma ** 2 / 2.0) * period) / (sigma * sqrt(period))
+
+def d2(stock, strike, period, rf, sigma):
+    return d1(stock, strike, period, rf, sigma) - sigma * sqrt(period)
+
+def bs_call(stock, strike, period, rf, sigma):
+    return stock*norm.cdf(d1(stock, strike, period, rf, sigma)) - strike*exp(-rf * period) * norm.cdf(
+        d2(stock, strike, period, rf, sigma))
+
+# put-call parity :: p = c - stock + strike * exp(-rf * period)
+# alternatively, p = strike * exp(-rf * period) * (1 - norm.cdf(d2(stock, strike, period, rf, sigma))) - stock * (1 - norm.cdf(d1(stock, strike, period, rf, sigma)))
+def bs_put(stock, strike, period, rf, sigma):
+    return bs_call(stock, strike, period, rf, sigma) - stock + strike * exp(-rf * period)  
+
+
+# spot and strike price
+def call_delta(stock, strike, period, rf, sigma):
+    return norm.cdf(d1(stock, strike, period, rf, sigma))
+
+def call_gamma(stock, strike, period, rf, sigma):
+    return norm.pdf(d1(stock, strike, period, rf, sigma)) / (stock * sigma * sqrt(period))
+
+# volatility
+def call_vega(stock, strike, period, rf, sigma):
+    return 0.01 * (stock * norm.pdf(d1(stock, strike, period, rf, sigma)) * sqrt(period))
+
+# time to maturity
+def call_theta(stock, strike, period, rf, sigma):
+    return 0.01 * (
+        -(stock * norm.pdf(d1(stock, strike, period, rf, sigma)) * sigma) / (2 * sqrt(period))
+        - rf * strike * exp(-rf * period) * norm.cdf(d2(stock, strike, period, rf, sigma))
+    )
+
+# interest rate
+def call_rho(stock, strike, period, rf, sigma):
+    return 0.01 * (strike * period * exp(-rf * period) * norm.cdf(d2(stock, strike, period, rf, sigma)))
+
+# spot and strike price
+def put_delta(stock, strike, period, rf, sigma):
+    return norm.cdf(d1(stock, strike, period, rf, sigma)) - 1
+
+def put_gamma(stock, strike, period, rf, sigma):
+    return norm.pdf(d1(stock, strike, period, rf, sigma)) / (stock * sigma * sqrt(period))
+
+# volatility
+def put_vega(stock, strike, period, rf, sigma):
+    return 0.01 * (stock * norm.pdf(d1(stock, strike, period, rf, sigma)) * sqrt(period))
+
+# time to maturity
+def put_theta(stock, strike, period, rf, sigma):
+    return 0.01 * (
+        -(stock * norm.pdf(d1(stock, strike, period, rf, sigma)) * sigma) / (2 * sqrt(period))
+        + rf * strike * exp(-rf * period) * norm.cdf(-d2(stock, strike, period, rf, sigma))
+    )
+
+# interest rate
+def put_rho(stock, strike, period, rf, sigma):
+    return 0.01 * (-strike * period * exp(-rf * period) * norm.cdf(-d2(stock, strike, period, rf, sigma)))
+
+print(put_delta(41.02, 50, (177/365), 0.02, 0.33))
